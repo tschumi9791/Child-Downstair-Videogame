@@ -5,6 +5,7 @@
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
 const scoreElement = document.getElementById('score');
+const levelElement = document.getElementById('level');
 const finalScoreElement = document.getElementById('final-score');
 const menuOverlay = document.getElementById('menu');
 const hudOverlay = document.getElementById('hud');
@@ -19,15 +20,24 @@ const PLAYER_SIZE = 40;
 const GRAVITY = 0.5;
 const JUMP_FORCE = -12;
 const SPEED = 6;
+const FRICTION = 0.8;
 const PLATFORM_HEIGHT = 20;
 const PLATFORM_GAP_MIN = 80;
 const PLATFORM_GAP_MAX = 150;
 const INITIAL_SCROLL_SPEED = 2;
 const SCROLL_ACCELERATION = 0.0005;
 
+// Platform Types
+const PLATFORM_TYPES = {
+    NORMAL: { color: '#475569', friction: 0.8, jumpMult: 1 },
+    BOUNCY: { color: '#10b981', friction: 0.8, jumpMult: 1.6 },
+    SLIPPERY: { color: '#f59e0b', friction: 0.98, jumpMult: 1 }
+};
+
 // Game State
 let state = 'MENU'; // MENU, PLAYING, GAMEOVER
 let score = 0;
+let level = 1;
 let scrollSpeed = INITIAL_SCROLL_SPEED;
 let platforms = [];
 let keys = {};
@@ -70,16 +80,21 @@ class Player {
         this.onGround = false;
         this.squish = 1;
         this.targetSquish = 1;
+        this.currentFriction = FRICTION;
+        this.currentJumpMult = 1;
     }
 
     update() {
         // Horizontal Movement
+        const accel = this.onGround ? (this.currentFriction > 0.9 ? 0.5 : 1) : 0.8;
         if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
-            this.vx = -SPEED;
+            this.vx -= accel;
+            if (this.vx < -SPEED) this.vx = -SPEED;
         } else if (keys['ArrowRight'] || keys['d'] || keys['D']) {
-            this.vx = SPEED;
+            this.vx += accel;
+            if (this.vx > SPEED) this.vx = SPEED;
         } else {
-            this.vx *= 0.8; // Friction
+            this.vx *= this.currentFriction;
         }
 
         this.x += this.vx;
@@ -94,12 +109,15 @@ class Player {
 
         // Jump
         if (this.onGround && (keys['ArrowUp'] || keys['w'] || keys['W'] || keys[' '])) {
-            this.vy = JUMP_FORCE;
+            this.vy = JUMP_FORCE * this.currentJumpMult;
             this.onGround = false;
             this.squish = 1.4; // Stretch on jump
         }
 
-        this.onGround = false; // Reset every frame
+        // Reset for next frame - will be set in checkCollisions if on ground
+        this.onGround = false;
+        this.currentFriction = FRICTION;
+        this.currentJumpMult = 1;
 
         // Squish logic
         this.squish += (this.targetSquish - this.squish) * 0.2;
@@ -124,7 +142,18 @@ class Platform {
     constructor(y, isInitial = false) {
         this.y = y;
         this.height = PLATFORM_HEIGHT;
-        this.color = '#475569';
+        
+        // Randomly pick a type
+        const rand = Math.random();
+        if (isInitial || rand < 0.7) {
+            this.type = 'NORMAL';
+        } else if (rand < 0.85) {
+            this.type = 'BOUNCY';
+        } else {
+            this.type = 'SLIPPERY';
+        }
+        
+        this.color = PLATFORM_TYPES[this.type].color;
         
         // Create a gap
         const gapWidth = Math.random() * (PLATFORM_GAP_MAX - PLATFORM_GAP_MIN) + PLATFORM_GAP_MIN + 20;
@@ -154,9 +183,11 @@ const player = new Player();
 
 function initGame() {
     score = 0;
+    level = 1;
     scrollSpeed = INITIAL_SCROLL_SPEED;
     platforms = [];
     player.reset();
+    updateHUD();
 
     // Create initial platforms
     for (let i = 0; i < 6; i++) {
@@ -193,6 +224,8 @@ function checkCollisions() {
                 player.y = platform.y - player.height;
                 player.vy = -scrollSpeed; // Match platform speed
                 player.onGround = true;
+                player.currentFriction = PLATFORM_TYPES[platform.type].friction;
+                player.currentJumpMult = PLATFORM_TYPES[platform.type].jumpMult;
             }
         });
     });
@@ -218,6 +251,11 @@ function start() {
     hudOverlay.classList.remove('hidden');
 }
 
+function updateHUD() {
+    scoreElement.innerText = Math.floor(score);
+    levelElement.innerText = level;
+}
+
 // Input Handling
 window.addEventListener('keydown', e => keys[e.key] = true);
 window.addEventListener('keyup', e => keys[e.key] = false);
@@ -234,7 +272,14 @@ function update(time) {
         
         scrollSpeed += SCROLL_ACCELERATION;
         score += scrollSpeed * 0.05;
-        scoreElement.innerText = Math.floor(score);
+        
+        // Level logic
+        const newLevel = Math.floor(score / 500) + 1;
+        if (newLevel > level) {
+            level = newLevel;
+        }
+        
+        updateHUD();
 
         platforms.forEach(p => p.update(scrollSpeed));
         platforms = platforms.filter(p => p.y + p.height > 0);

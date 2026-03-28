@@ -119,17 +119,22 @@ p {
     right: 20px;
     width: auto;
     height: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
     pointer-events: none;
 }
 
-.score-container {
+.hud-item {
     background: rgba(0, 0, 0, 0.4);
-    padding: 0.5rem 1rem;
+    padding: 0.5rem 1.2rem;
     border-radius: 2rem;
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     font-weight: 700;
     backdrop-filter: blur(4px);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
 }
 
 .label {
