@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Downstairs Dash</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        
+        <!-- HUD Overlay -->
+        <div id="hud" class="overlay hidden">
+            <div class="score-container">
+                <span class="label">Distance:</span>
+                <span id="score">0</span>m
+            </div>
+        </div>
+
+        <!-- Menu Overlay -->
+        <div id="menu" class="overlay">
+            <div class="modal">
+                <h1>Downstairs Dash</h1>
+                <p>Descend as far as you can. Don't hit the top!</p>
+                <div class="controls">
+                    <p><strong>Left/Right:</strong> Arrow keys or A/D</p>
+                    <p><strong>Jump:</strong> Space or W</p>
+                </div>
+                <button id="start-btn" class="btn">Start Game</button>
+            </div>
+        </div>
+
+        <!-- Game Over Overlay -->
+        <div id="gameover" class="overlay hidden">
+            <div class="modal">
+                <h1>Game Over</h1>
+                <div class="result">
+                    <p>Final Score:</p>
+                    <h2 id="final-score">0</h2>
+                </div>
+                <button id="restart-btn" class="btn">New Game</button>
+            </div>
+        </div>
+    </div>
+    <script src="game.js"></script>
+</body>
+</html>
